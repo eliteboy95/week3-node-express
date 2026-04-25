@@ -1,6 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
+const PORT = process.env.PORT
 app.use(express.json()); // Parse JSON bodies
+
 
 let todos = [
   { id: 1, task: 'Learn Node.js', completed: false },
@@ -12,12 +15,43 @@ app.get('/todos', (req, res) => {
   res.status(200).json(todos); // Send array as JSON
 });
 
+app.get('/todos/:id', (req, res) =>{
+  const id = parseInt(req.params.id);
+
+  const todo = todos.find(t => t.id === id);
+
+  if(!todo){
+    return res.status(404).json({message: 'Todo not found'});
+  }
+  res.status(200).json(todo);
+});
+
 // POST New – Create
 app.post('/todos', (req, res) => {
-  const newTodo = { id: todos.length + 1, ...req.body }; // Auto-ID
+  const { task, completed } = req.body;
+
+  // task is required
+  if (!task || !completed) {
+    return res.status(400).json({ message: 'Incomplete Credentials' });
+  }
+
+  // completed must be boolean if provided
+  if (completed !== undefined && typeof completed !== 'boolean') {
+    return res.status(400).json({ message: 'Completed must be true or false' });
+  }
+
+  const newTodo = {
+    id: todos.length + 1, // auto ID
+    task,
+    completed: completed !== undefined ? completed : false // default = false
+  };
+
   todos.push(newTodo);
-  res.status(201).json(newTodo); // Echo back
+
+  res.status(201).json(newTodo);
 });
+
+
 
 // PATCH Update – Partial
 app.patch('/todos/:id', (req, res) => {
@@ -46,5 +80,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server error!' });
 });
 
-const PORT = 3002;
-app.listen(PORT, () => console.log(`Server on port ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
